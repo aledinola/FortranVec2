@@ -1,0 +1,41 @@
+# Select Compiler
+COMPILER =  ifx
+
+SWITCH = /O3 /Qipo /Qopenmp 
+#SWITCH_DEBUG =  /fast /Qopenmp /wrap-margin- /heap-arrays0
+SWITCH_DEBUG = /O0 /warn:all /check:all
+
+SRCS = main.f90
+
+EXEC = run_win.exe
+
+compile:
+	$(COMPILER) -o $(EXEC) $(SRCS) $(SWITCH)  
+
+compile_debug:
+	$(COMPILER) -o $(EXEC) $(SRCS) $(SWITCH_DEBUG)  
+	
+run:
+	$(EXEC)
+	
+# Cleaning everything
+
+clean:
+	del *.mod
+	del *.obj
+	del *.pdb
+	del *.ilk
+	del $(EXEC)
+	
+	
+
+#To compile in Mac, type:
+# $ make -f makefile_mac
+
+#To compile in Windows, type:
+# $ nmake /f makefile_win
+# option flag /heap-arrays0
+# option for openMP:
+# /Qopenmp
+# to store all arrays on the heap
+# see https://community.intel.com/t5/Intel-Fortran-Compiler/allocatable-automatic-stack-heap/m-p/1229091#M152713

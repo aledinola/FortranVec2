@@ -47,49 +47,80 @@ end function return_fn
 end module mymod
 
 program main
-use mymod, only: return_fn, linspace
-implicit none
- 
-integer, parameter :: n_a = 1000, n_z = 50
-real(8), parameter :: r = 0.04d0, w = 1.0d0 
-integer :: iap,ia,iz, alloc_status
-real(8) :: a_grid(n_a), z_grid(n_z)
-real(8), allocatable :: payoff(:,:,:)
-real(8) :: t_start, t_end
+  use mymod,   only: return_fn, linspace
+  use omp_lib, only: omp_get_wtime
+  implicit none
 
-! Build vectors for a and z
-a_grid = linspace(0.001d0, 50.0d0, n_a)
-z_grid = linspace(0.5d0, 1.5d0, n_z)
+  integer, parameter :: n_a = 1000, n_z = 100
+  real(8), parameter :: r = 0.04d0, w = 1.0d0
 
-! Allocate 3D array to hold results
-allocate(payoff(n_a, n_a, n_z), stat=alloc_status)
-if (alloc_status /= 0) then
-    print *, "Error allocating memory for payoff array"
+  integer :: iap, ia, iz, alloc_status
+  real(8) :: a_grid(n_a), z_grid(n_z)
+  real(8), allocatable :: payoff(:,:,:), payoff2(:,:,:)
+  real(8) :: t_start, t_end, err
+  integer :: par_fortran
+
+  ! Toggle OpenMP region on/off (set to 0 to force serial)
+  par_fortran = 1
+
+  ! Build vectors for a and z
+  a_grid = linspace(0.001d0, 50.0d0, n_a)
+  z_grid = linspace(0.5d0, 1.5d0, n_z)
+
+  ! Allocate 3D arrays to hold results
+  allocate(payoff(n_a, n_a, n_z), payoff2(n_a, n_a, n_z), stat=alloc_status)
+  if (alloc_status /= 0) then
+    print *, "Error allocating memory for payoff arrays"
     stop
-endif 
+  endif
 
-call cpu_time(t_start)
-! Construct 3D array to hold results using nested loops
-do iz = 1, n_z
-  do ia = 1, n_a
-    do iap = 1, n_a
-        payoff(iap,ia,iz) = return_fn(a_grid(iap),a_grid(ia),z_grid(iz),r,w)
+  ! -------------------------
+  ! Serial computation timing
+  ! -------------------------
+  t_start = omp_get_wtime()
+
+  do iz = 1, n_z
+    do ia = 1, n_a
+      do iap = 1, n_a
+        payoff(iap, ia, iz) = return_fn(a_grid(iap), a_grid(ia), z_grid(iz), r, w)
+      enddo
     enddo
   enddo
-enddo
 
-call cpu_time(t_end)
-print *, "CPU time (s): ", t_end - t_start
+  t_end = omp_get_wtime()
+  print *, "Serial wall time (s): ", t_end - t_start
 
-!do iap=1,5
-!  do ia=1,5
-!    do iz=1,5
-!      print *, "payoff(",iap,",",ia,",",iz,") = ", payoff(iap,ia,iz)
-!    enddo
-!  enddo
-!enddo
+  ! -------------------------
+  ! OpenMP computation timing
+  ! -------------------------
+  t_start = omp_get_wtime()
 
-deallocate(payoff)
+  !$omp parallel default(shared) private(iz, ia, iap) if (par_fortran == 1)
+  !$omp do collapse(3) schedule(static)
+  do iz = 1, n_z
+    do ia = 1, n_a
+      do iap = 1, n_a
+        payoff2(iap, ia, iz) = return_fn(a_grid(iap), a_grid(ia), z_grid(iz), r, w)
+      enddo
+    enddo
+  enddo
+  !$omp end do
+  !$omp end parallel
+
+  t_end = omp_get_wtime()
+  print *, "OpenMP wall time (s): ", t_end - t_start
+
+  ! Check results are correct
+  err = maxval(abs(payoff - payoff2))
+
+  if (err > 1.0d-10) then
+    print *, "Error: results do not match! max error = ", err
+  else
+    print *, "Results match! max error = ", err
+  endif
+
+  deallocate(payoff, payoff2)
 
 end program main
+
 

@@ -1,0 +1,10 @@
+I would like to ask about the performance of a code pattern that shows up quite often in my projects.
+
+I came up with a MWE. The bottleneck is the three nested loops in the main program. 
+I have tried to speed up the computation using OpenMP and achieved good improvement.
+However, it was pointed out by some users in another post that I could also try to vectorize the code.
+How would you vectorize this part of the code? The function is defined in a module and accepts scalar arguments and returns a scalar result.
+
+This MWE is also available on github: https://github.com/aledinola/FortranVec2
+
+Any help is really appreciated!

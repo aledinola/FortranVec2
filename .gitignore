@@ -30,3 +30,90 @@
 *.exe
 *.out
 *.app
+
+############################################
+# Microsoft Visual Studio 2022
+############################################
+
+# VS user-specific files
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# VS build directories
+Debug/
+Release/
+x64/
+x86/
+ARM/
+ARM64/
+build/
+out/
+
+# MSBuild / VS intermediate files
+*.obj
+*.pch
+*.pdb
+*.idb
+*.ilk
+*.tlog
+*.log
+*.lastbuildstate
+
+# VS generated files
+*.vcxproj.user
+*.vcxproj.filters
+*.vcxproj.user
+*.vcproj.user
+
+############################################
+# Intel Fortran (oneAPI / ifort / ifx)
+############################################
+
+# Module files
+*.mod
+*.smod
+
+# Intel Fortran intermediates
+*.i90
+*.i
+*.dyn
+*.optrpt
+*.qv
+*.ipo
+*.il
+*.ir
+*.cg
+*.db
+
+# Intel oneAPI directories
+.intel/
+.ifort/
+.ifx/
+
+############################################
+# Executables (Windows)
+############################################
+
+*.exe
+*.dll
+*.lib
+*.exp
+
+############################################
+# CMake (if used)
+############################################
+
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+############################################
+# Misc
+############################################
+
+*.stackdump
+

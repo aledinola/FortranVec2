@@ -54,10 +54,10 @@ program main
   integer, parameter :: n_a = 1000, n_z = 100
   real(8), parameter :: r = 0.04d0, w = 1.0d0
 
-  integer :: iap, ia, iz, alloc_status
+  integer :: iap, ia, iz, alloc_status, iapz
   real(8) :: a_grid(n_a), z_grid(n_z)
-  real(8), allocatable :: payoff(:,:,:), payoff2(:,:,:)
-  real(8) :: t_start, t_end, err
+  real(8), allocatable :: payoff(:,:,:), payoff2(:,:,:), payoff3(:,:,:), consumption(:)
+  real(8) :: t_start, t_end, err, cash, err3
   integer :: par_fortran
 
   ! Toggle OpenMP region on/off (set to 0 to force serial)
@@ -68,7 +68,7 @@ program main
   z_grid = linspace(0.5d0, 1.5d0, n_z)
 
   ! Allocate 3D arrays to hold results
-  allocate(payoff(n_a, n_a, n_z), payoff2(n_a, n_a, n_z), stat=alloc_status)
+  allocate(consumption(n_a), payoff(n_a, n_a, n_z), payoff2(n_a, n_a, n_z), payoff3(n_a, n_a, n_z), stat=alloc_status)
   if (alloc_status /= 0) then
     print *, "Error allocating memory for payoff arrays"
     stop
@@ -110,13 +110,36 @@ program main
   t_end = omp_get_wtime()
   print *, "OpenMP wall time (s): ", t_end - t_start
 
+  t_start = omp_get_wtime()
+
+  do iz = 1, n_z
+    do ia = 1, n_a
+        cash = (1.0d0+r)*a_grid(ia) + w*z_grid(iz)
+        consumption = cash - a_grid
+        iapz = count(consumption > 0.0d0)
+        payoff3(1:iapz, ia, iz) = log(consumption(1:iapz))
+        if (iapz < n_a) then
+            payoff3(iapz+1:n_a, ia, iz) = -1.0d10
+        endif
+    enddo
+  enddo
+  t_end = omp_get_wtime()
+  print *, "Method 3 time (s): ", t_end - t_start
+
+  
   ! Check results are correct
   err = maxval(abs(payoff - payoff2))
+  err3 = maxval(abs(payoff - payoff3))
 
   if (err > 1.0d-10) then
     print *, "Error: results do not match! max error = ", err
   else
     print *, "Results match! max error = ", err
+  endif
+  if (err3 > 1.0d-10) then
+    print *, "Error: results do not match! max error = ", err3
+  else
+    print *, "Results match! max error = ", err3
   endif
 
   deallocate(payoff, payoff2)
